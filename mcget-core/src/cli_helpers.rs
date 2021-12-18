@@ -3,7 +3,7 @@ use {
     indicatif::ProgressBar,
 };
 
-pub type RResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub type RResult<T> = Result<T, Box<dyn std::error::Error + Send>>;
 
 pub fn get_or<T>(value: Option<T>, message: &str) -> T {
     match value {

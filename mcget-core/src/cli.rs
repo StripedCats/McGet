@@ -5,9 +5,13 @@ use {
         api::prelude::*,
         config::*
     },
+    indicatif::{ProgressBar, HumanBytes},
 
     std::{
-        path::PathBuf
+        path::PathBuf,
+    },
+    tokio::{
+        sync::mpsc::channel
     }
 };
 
@@ -75,7 +79,9 @@ async fn download(args: McGetArgs) -> RResult<()> {
 
     let path = PathBuf::from(&pack.modpack.name);
     let mut urls = vec![];
+    let mut handles = vec![];
     
+    log("Getting files...");
     for modification in &pack.modpack.mods {
         let files = get_files(modification.id,
                                           &pack.modpack.version, &pack.modpack.mod_loader).await?;
@@ -85,9 +91,52 @@ async fn download(args: McGetArgs) -> RResult<()> {
         }
 
         let file = files.first().unwrap().clone();
-        log(&format!("Downloading {}...", file.download_url.bold()));
         urls.push(file);
     }
+
+    log(&format!("Downloading {} files...", urls.len().to_string().green()));
+    let bar = ProgressBar::new(urls.len() as u64);
+    bar.inc(0);
+    
+    let mut downloaded = 0usize;
+    let mut downloaded_size = 0usize;
+    let need_to_download = urls.len();
+    
+    let (tx, mut rx) = channel(32);
+
+    for url in urls {
+        let target = path.join(url.file_name);
+        let txc = tx.clone();
+        let downloader_task = tokio::spawn(async move {
+            match download_to(&url.download_url, target.to_str().unwrap()).await {
+                Ok(length) => {
+                    txc.send(length).await.unwrap();
+                    Ok(())
+                },
+                Err(e) => Err(e)
+            }
+        });
+
+        handles.push(downloader_task);
+    }
+
+    while downloaded < need_to_download {
+        let bytes = rx.recv().await.unwrap_or(0);
+        if bytes == 0 {
+            log("Failed to download files");
+            std::process::exit(1);
+        }
+        bar.inc(1);
+
+        downloaded += 1;
+        downloaded_size += bytes;
+    }
+    bar.finish();
+    
+    log(&format!(
+        "Downloaded size: {}",
+        HumanBytes(downloaded_size as u64).to_string().bold()
+    ));
 
     Ok(())
 }

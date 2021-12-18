@@ -27,6 +27,22 @@ pub struct Mod {
 }
 
 impl ModFile {
+    pub fn contains_mod_loader(&self, loader: &str) -> bool {
+        let lower = loader.to_lowercase();
+        
+        for version in &self.versions {
+            let ver = version.to_lowercase();
+
+            if ver == lower {
+                return true;
+            } else if &ver == "forge" || &ver == "fabric" {
+                return false;
+            }
+        }
+
+        true
+    }
+
     pub fn contains_version(&self, ver: &str) -> bool {
         for version in &self.versions {
             if version.to_lowercase() == ver.to_lowercase() {

@@ -9,6 +9,16 @@ use {
     urlencoding::encode
 };
 
+fn unwrap_or<T, E>(result: Result<T, E>, message: &str) -> T {
+    match result {
+        Ok(r) => r,
+        Err(_) => {
+            log(&format!("{}: {}", "Failed to request some data".bold(), message));
+            std::process::exit(1);
+        }
+    }
+}
+
 #[inline(always)]
 pub fn get_url(path: &str, add_game: bool) -> String {
     let mut s = "https://addons-ecs.forgesvc.net/api/v2/addon/".to_string();
@@ -20,17 +30,31 @@ pub fn get_url(path: &str, add_game: bool) -> String {
     s
 }
 
+pub async fn download_to(file_url: &str, path: &str) -> RResult<usize> {
+    let value = unwrap_or(
+        get(file_url).await, &format!("Failed to download {}", file_url.red()),
+    ).bytes().await;
+
+    let data = unwrap_or(value, "Failed to recv bytes");
+    std::fs::write(path, &data).unwrap();
+
+    Ok(data.len())
+}
+
 pub async fn get_files(id: usize, version: &str,
                        mod_loader: &str) -> RResult<Vec<ModFile>> {
     let mut path = get_url(&id.to_string(), false);
     path.push_str("/files");
 
-    let res = get(
-        path).await?.json::<Vec<ModFile>>().await?;
+    let res = unwrap_or(
+        get(path).await, &format!(
+            "Failed to request files for ID#{}", id
+        )).json::<Vec<ModFile>>().await.unwrap();
+
     let mut results = vec![];
 
     for result in &res {
-        if result.contains_version(version) && result.contains_version(mod_loader) {
+        if result.contains_version(version) && result.contains_mod_loader(mod_loader) {
             results.push(result.clone());
         }
     }
@@ -48,9 +72,12 @@ pub async fn search_mod(query: &str, version: &Option<String>) -> RResult<Vec<Mo
         path.push_str(&encode(&version.as_ref().unwrap()));
     }
 
-    let res = get(path).await?
-    .json::<Vec<Mod>>().await?;
+    let res = unwrap_or(get(path).await, &format!(
+        "Error requesting mods by query {:?}", query
+    )).json::<Vec<Mod>>().await;
 
-    Ok(res)
+    Ok(unwrap_or(res, &format!(
+        "Error while parsing mods"
+    )))
 }
 
