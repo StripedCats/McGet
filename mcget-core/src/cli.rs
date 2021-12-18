@@ -22,6 +22,10 @@ struct McGetArgs {
            description = "search mod in CurseForge registry")]
     pub search: Option<String>,
 
+    #[argh(switch, short = 'a',
+           description = "add first result to Modpack.yaml")]
+    pub add: bool,
+
     #[argh(option, short = 'v',
            description = "version of minecraft")]
     pub version: Option<String>,
@@ -57,13 +61,28 @@ async fn search(args: McGetArgs) -> RResult<()> {
         search_mod(&args.search.unwrap(), &args.version).await?
     };
 
+    if args.add {
+        let first = results.first().unwrap();
+        let mut pack = ModpackConfig::lookup();
+        pack.modpack.mods.push(ModConfig{id: first.id});
+        log("Saved mod:");
+        print_mod(first);
+
+        pack.store();
+        return Ok(());
+    }
+
     for modification in &results {
-        println!("{} (id: {}):\n\t{}\n\tMod loaders: {}\n\tCurseForge: {}", modification.name.red().bold(),
-                 modification.id,
-                 modification.summary.bold(), dump_mod_loaders(&modification), modification.curseforge);
+        print_mod(modification);
     }
 
     Ok(())
+}
+
+fn print_mod(modification: &Mod) {
+    println!("{} (id: {}):\n\t{}\n\tMod loaders: {}\n\tCurseForge: {}", modification.name.red().bold(),
+             modification.id,
+             modification.summary.bold(), dump_mod_loaders(&modification), modification.curseforge);
 }
 
 async fn download(args: McGetArgs) -> RResult<()> {
