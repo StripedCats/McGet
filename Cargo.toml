@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.15.0", features = ["full"] }
-mcget-core = { path = "mcget-core" }
+
+cli = { path = "cli" }

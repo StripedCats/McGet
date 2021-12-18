@@ -1,6 +1,8 @@
-use mcget_core::{prelude::*, cli_helpers::RResult};
+use {
+    cli::prelude::*
+};
 
 #[tokio::main]
 async fn main() -> RResult<()> {
-    start().await
+    CliApp::run().await
 }

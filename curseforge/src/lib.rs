@@ -1,4 +1,5 @@
-pub mod requests;
+pub mod api;
 pub mod objects;
+pub mod downloader;
 
 pub mod prelude;
