@@ -8,7 +8,7 @@ pub trait ModExt {
     fn where_mods(self, version: &str,
                   loader: Option<&String>) -> Vec<ModFile>;
     
-    fn latest<'vm>(&'vm self) -> &'vm ModFile;
+    fn latest<'vm>(&'vm self) -> Result<&'vm ModFile, ()>;
 }
 
 impl ModExt for Vec<ModFile> {
@@ -37,10 +37,13 @@ impl ModExt for Vec<ModFile> {
         results
     }
 
-    fn latest<'vm>(&'vm self) -> &'vm ModFile {
-        self.iter().max_by(
+    fn latest<'vm>(&'vm self) -> Result<&'vm ModFile, ()> {
+        if self.is_empty() {
+            return Err(());
+        }
+        Ok(self.iter().max_by(
             |x, y| x.id.cmp(&y.id)
-        ).as_ref().unwrap()
+        ).as_ref().unwrap())
     }
 }
 
@@ -48,6 +51,12 @@ impl ModExt for Vec<ModFile> {
 pub struct GameVersion {
     pub version: String,
     pub mod_loader: Option<String>
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ModDependency {
+    #[serde(rename = "addonId")]
+    pub addon_id: usize
 }
 
 #[derive(Deserialize, Debug)]
@@ -61,7 +70,9 @@ pub struct ModFile {
     pub versions: Vec<String>,
 
     #[serde(rename = "downloadUrl")]
-    pub download_url: String
+    pub download_url: String,
+
+    pub dependencies: Vec<ModDependency>
 }
 
 #[derive(Deserialize, Debug)]

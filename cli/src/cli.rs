@@ -104,7 +104,7 @@ impl CliApp {
             return Ok(());
         }
 
-        for result in results {
+        for result in results.iter().rev() {
             println!("{}", Self::dump_modinfo(&result));
         }
 
@@ -130,8 +130,14 @@ impl CliApp {
         let packs = get_config_location().join("modpacks").join(&pack.mc.name);
         std::fs::create_dir(packs.to_str().unwrap()).unwrap_or_default();
 
-        for mod_ in &pack.mc.mods {
-            downloader.add_file(mod_.id, packs.to_str().unwrap().to_string());
+        println!("Resolving dependencies...");
+        let deps = resolve_dependencies(&cf, pack.mc.mods.iter().map(
+            |v| v.id
+        ).collect(), version.clone(), packs.to_str().unwrap().to_string()).await;
+
+        println!("Downloading mods...");
+        for target in deps {
+            downloader.add_target(target);
         }
 
         downloader.download(&cf, version).await;

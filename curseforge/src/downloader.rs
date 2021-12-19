@@ -22,7 +22,7 @@ use {
 type ArcResult<T> = Result<T, Box<dyn std::error::Error + Send>>;
 
 #[derive(Clone)]
-struct DownloadTarget {
+pub struct DownloadTarget {
     pub id: usize,
     pub dest: String,
 }
@@ -31,7 +31,7 @@ struct DownloadTarget {
 pub struct MassDownloader {
     pub progress: Option<ProgressBar>,
 
-    files: Vec<DownloadTarget>
+    files: Vec<DownloadTarget>,
 }
 
 impl MassDownloader {
@@ -44,6 +44,10 @@ impl MassDownloader {
         self.files.push(DownloadTarget{id, dest});
     }
 
+    pub fn add_target(&mut self, target: DownloadTarget) {
+        self.files.push(target);
+    }
+
     async fn download_process(client: Client<HttpsConnector<HttpConnector>>,
                               file: &mut DownloadTarget, cf: CurseForge,
                               version: GameVersion) -> ArcResult<(usize, String)> {
@@ -51,11 +55,16 @@ impl MassDownloader {
             Ok(r) => r,
             Err(_) => { return Ok((0, file.id.to_string())); }
         };
+
         let latest = mf.latest();
-        let mut url = latest.download_url.clone();
+        if latest.is_err() {
+            return Ok((0, file.id.to_string()));
+        }
+
+        let mut url = latest.unwrap().download_url.clone();
         let dst_path = Path::new(&file.dest);
 
-        file.dest = dst_path.join(&latest.filename).to_str().unwrap().to_string();
+        file.dest = dst_path.join(&latest.unwrap().filename).to_str().unwrap().to_string();
 
         drop(mf);
         let response;
@@ -92,8 +101,8 @@ impl MassDownloader {
                           version: GameVersion) {
         let https = HttpsConnector::new();
         let client = Client::builder().build::<_, hyper::Body>(https);
-
         self.progress = Option::Some(ProgressBar::new(self.files.len() as u64 + 1));
+
         let bar = self.progress.as_ref().unwrap();
         bar.inc(1);
         let (tx, mut rx) = channel(32);

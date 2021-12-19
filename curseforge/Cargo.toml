@@ -16,3 +16,4 @@ tokio = { version = "1.15.0", features = ["full"] }
 
 indicatif = "0.16.2"
 colored = "2.0.0"
+async-recursion = "0.3.2"
