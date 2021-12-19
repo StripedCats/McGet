@@ -5,7 +5,7 @@ use {
 #[derive(Serialize, Deserialize)]
 pub struct ModpackMod {
     #[serde(rename = "Id")]
-    id: usize
+    pub id: usize
 }
 
 #[derive(Serialize, Deserialize)]
@@ -21,6 +21,12 @@ pub struct MinecraftModpack {
 
     #[serde(rename = "Mods")]
     pub mods: Vec<ModpackMod>
+}
+
+impl MinecraftModpack {
+    pub fn has_modid(&self, id: usize) -> bool {
+        self.mods.iter().any(move |v| v.id == id)
+    }
 }
 
 #[derive(Serialize, Deserialize)]

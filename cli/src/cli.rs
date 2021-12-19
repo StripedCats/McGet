@@ -29,6 +29,18 @@ pub struct CliApp {
 
     #[argh(option, description = "create modpack")]
     pub create_modpack: Option<String>,
+
+    #[argh(option, short = 'd',
+           description = "download and switch modpack")]
+    pub download: Option<String>,
+
+    #[argh(option, short = 's',
+           description = "switch modpack")]
+    pub switch: Option<String>,
+
+    #[argh(option, short = 'r',
+           description = "remove modpack")]
+    pub remove: Option<String>
 }
 
 impl CliApp {
@@ -77,6 +89,12 @@ impl CliApp {
         if self.add.is_some() {
             let first = results.first().unwrap();
             let mut cfg = ModpackCfg::load(self.add.as_ref().unwrap());
+            if cfg.mc.has_modid(first.id) {
+                println!("Already had this one:");
+                println!("{}", Self::dump_modinfo(first));
+                return Ok(());
+            }
+
             cfg.mc.mods.push(ModpackMod::new(first.id));
             cfg.store();
 
@@ -105,11 +123,58 @@ impl CliApp {
         Ok(())
     }
 
+    pub async fn download_fn(&self, cf: CurseForge) -> RResult<()> {
+        let pack = ModpackCfg::load(self.download.as_ref().unwrap());
+        let version = GameVersion::new(pack.mc.version).with_loader(pack.mc.loader);
+        let mut downloader = MassDownloader::new();
+        let packs = get_config_location().join("modpacks").join(&pack.mc.name);
+        std::fs::create_dir(packs.to_str().unwrap()).unwrap_or_default();
+
+        for mod_ in &pack.mc.mods {
+            downloader.add_file(mod_.id, packs.to_str().unwrap().to_string());
+        }
+
+        downloader.download(&cf, version).await;
+
+        let cfg = McGetConfig::lookup();
+        cfg.switch_modpack(&pack.mc.name);
+
+        Ok(())
+    }
+
+    pub fn remove_modpack(&self) {
+        let pack = self.remove.as_ref().unwrap();
+        let cfg_dir = get_config_location().join("modpacks").join(pack);
+
+        match std::fs::remove_dir_all(cfg_dir.to_str().unwrap()) {
+            Ok(_) => {
+                println!("{} Removed {}", "Successfully".green(),
+                         cfg_dir.to_str().unwrap().bold());
+            }
+
+            Err(e) => {
+                println!("Error: {}", e.to_string().red());
+            }
+        }
+    }
+
+    pub fn switch_modpack(&self) {
+        let pack = self.switch.as_ref().unwrap();
+        let cfg = McGetConfig::lookup();
+        cfg.switch_modpack(pack);
+    }
+
     pub async fn run() -> RResult<()> {
         let cf = CurseForge::new();
         let args: Self = argh::from_env();
         
-        if args.create_modpack.is_some() {
+        if args.switch.is_some() {
+            args.switch_modpack();
+        } else if args.remove.is_some() {
+            args.remove_modpack();
+        } else if args.download.is_some() {
+            args.download_fn(cf).await?;
+        } else if args.create_modpack.is_some() {
             args.create_modpack_fn().await?;
         } else if args.search.is_some() {
             args.search_fn(cf).await?;

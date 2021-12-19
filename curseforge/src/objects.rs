@@ -44,7 +44,7 @@ impl ModExt for Vec<ModFile> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GameVersion {
     pub version: String,
     pub mod_loader: Option<String>

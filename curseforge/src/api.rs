@@ -12,6 +12,7 @@ use {
 
 pub type RResult<T> = Result<T, Box<dyn std::error::Error>>;
 
+#[derive(Clone)]
 pub struct CurseForge {
     client: Client<HttpsConnector<HttpConnector>>
 }
