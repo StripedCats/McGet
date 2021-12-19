@@ -5,7 +5,9 @@ use {
     },
     serde::{Serialize, Deserialize},
     symlink::{symlink_dir, remove_symlink_dir},
-    colored::*
+    colored::*,
+
+    crate::modpack::*
 };
 
 #[derive(Serialize, Deserialize)]
@@ -101,6 +103,45 @@ impl McGetConfig {
         }
 
         cfg
+    }
+}
+
+impl ModpackCfg {
+    pub fn new(name: String, version: String,
+               loader: String, file: String) -> ModpackCfg {
+        ModpackCfg{
+            file,
+            mc: MinecraftModpack{
+                name, version,
+                loader, mods: Default::default()
+            }
+        }
+    }
+
+    pub fn load(filename: &str) -> ModpackCfg {
+        let contents = match std::fs::read_to_string(filename) {
+            Ok(r) => r,
+            Err(e) => {
+                println!("Error: {}", e.to_string().red());
+                std::process::exit(1);
+            }
+        };
+
+        match serde_yaml::from_str::<ModpackCfg>(&contents) {
+            Ok(mut r) => {
+                r.file = filename.to_string();
+                r
+            },
+            Err(e) => {
+                println!("Failed to parse YAML file: {}", e.to_string().red());
+                std::process::exit(1);
+            }
+        }
+    }
+
+    pub fn store(&self) {
+        let content = serde_yaml::to_string(self).unwrap();
+        std::fs::write(&self.file, content).unwrap_or_default();
     }
 }
 

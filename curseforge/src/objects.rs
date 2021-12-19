@@ -50,7 +50,6 @@ pub struct GameVersion {
     pub mod_loader: Option<String>
 }
 
-
 #[derive(Deserialize, Debug)]
 pub struct ModFile {
     pub id: usize,
