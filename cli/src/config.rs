@@ -170,7 +170,7 @@ pub fn get_config_location() -> PathBuf {
             path.push(&format!("/home/{}/.local/", username));
         }
     } else if cfg!(target_os = "macos") {
-        path.push(&format!("/Users/{}/.local/", username));
+        path.push(&format!("/Users/{}/", username));
     } else {
         path.push(format!("C:\\Users\\{}\\AppData\\", username));
     }
