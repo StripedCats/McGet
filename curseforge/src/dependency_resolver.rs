@@ -2,14 +2,14 @@ use {
     tokio::{
         sync::mpsc::{
             channel, Sender
-        }
+        }, sync::Mutex
     },
 
     crate::{api::*, objects::*,
             downloader::DownloadTarget},
     std::{
         collections::HashSet,
-        sync::Arc
+        sync::Arc,
     },
     colored::*
 };
@@ -17,7 +17,7 @@ use {
 #[async_recursion::async_recursion]
 async fn resolve_dependency(of: usize, cf: Arc<CurseForge>,
                             deps: Sender<usize>, version: GameVersion,
-                            root: bool) {
+                            root: bool, resolved: Arc<Mutex<HashSet<usize>>>) {
     let files;
     match cf.files(of, version.clone()).await {
         Ok(r) => { files = Option::Some(r); },
@@ -41,11 +41,22 @@ async fn resolve_dependency(of: usize, cf: Arc<CurseForge>,
     for dep in &latest.dependencies {
         let version = version.clone();
         let addon_id = dep.addon_id;
+        if dep.type_ != 3 { continue; }
+
+        {
+            let lock = resolved.lock().await;
+            if (*lock).contains(&addon_id) {
+                continue;
+            }
+        }
+
         let cf = cf.clone();
         let rdeps = deps.clone();
+        let resolved = resolved.clone();
 
         tasks.push(tokio::spawn(async move {
-            resolve_dependency(addon_id, cf, rdeps, version, false).await;
+            resolve_dependency(addon_id, cf, rdeps, version, false,
+                                resolved).await;
         }));
         deps.send(dep.addon_id).await.unwrap_or_default();
     }
@@ -62,7 +73,7 @@ async fn resolve_dependency(of: usize, cf: Arc<CurseForge>,
 pub async fn resolve_dependencies(cf: &CurseForge, of: Vec<usize>,
                                   game: GameVersion, path: String) -> Vec<DownloadTarget> {
     let mut targets = vec![];
-    let mut dependency_map: HashSet<usize> = Default::default();
+    let dependency_map: Arc<Mutex<HashSet<usize>>> = Default::default();
     let (tx, mut rx) = channel(32);
     let cf = Arc::new(cf.clone());
     let mut tasks = vec![];
@@ -72,10 +83,12 @@ pub async fn resolve_dependencies(cf: &CurseForge, of: Vec<usize>,
         let cf = cf.clone();
         let ver = game.clone();
         let id = dep.clone();
+        let resolved = dependency_map.clone();
 
         tx.send(id).await.unwrap_or_default();
         tasks.push(tokio::spawn(async move {
-            resolve_dependency(id, cf, tx, ver, true).await;
+            resolve_dependency(id, cf, tx, ver, true,
+                                resolved).await;
         }));
     }
 
@@ -83,9 +96,11 @@ pub async fn resolve_dependencies(cf: &CurseForge, of: Vec<usize>,
     while resolved < tasks.len() {
         let modid = rx.recv().await.unwrap();
         if modid == 0 { resolved += 1; continue; }
-        if !dependency_map.contains(&modid) {
+
+        let mut lock = dependency_map.lock().await;
+        if !(*lock).contains(&modid) {
             targets.push(DownloadTarget{id: modid, dest: path.clone()});
-            dependency_map.insert(modid);
+            (*lock).insert(modid);
 
             println!(">> Resolved dependency {}", modid);
         }

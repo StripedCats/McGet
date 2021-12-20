@@ -26,6 +26,7 @@ async fn web_request(http: &Client<HttpsConnector<HttpConnector>>, url: &str) ->
         if response.as_ref().unwrap().status() == 200 {
             break;
         }
+        println!("Retrying...");
 
         retries -= 1;
     }

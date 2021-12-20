@@ -56,7 +56,10 @@ pub struct GameVersion {
 #[derive(Deserialize, Debug)]
 pub struct ModDependency {
     #[serde(rename = "addonId")]
-    pub addon_id: usize
+    pub addon_id: usize,
+
+    #[serde(rename = "type")]
+    pub type_: usize
 }
 
 #[derive(Deserialize, Debug)]

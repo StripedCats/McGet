@@ -70,6 +70,7 @@ impl MassDownloader {
         let response;
 
         loop {
+            url = url.replace(" ", "%20");
             let loc = match client.get(url.parse().unwrap()).await {
                 Ok(r) => r,
                 Err(_) => { println!("Get"); return Ok((0, url.clone())); }
