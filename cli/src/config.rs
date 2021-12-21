@@ -74,9 +74,9 @@ impl McGetConfig {
                 println!("Created symlink {} => {}", pack.as_path().to_str().unwrap().bold(),
                          mods.as_path().to_str().unwrap().bold());
             },
-            Err(_) => {
-                println!("Can't symlink {} => {}", pack.as_path().to_str().unwrap().bold(),
-                         mods.as_path().to_str().unwrap().bold());
+            Err(e) => {
+                println!("Can't symlink {} => {}; Reason: {}", pack.as_path().to_str().unwrap().bold(),
+                         mods.as_path().to_str().unwrap().bold(), e.to_string());
                 std::process::exit(1);
             }
         }
@@ -153,7 +153,7 @@ fn default_minecraft_path() -> String {
     } else if cfg!(target_os = "macos") {
         format!("/Users/{}/Library/Application Support/minecraft", username)
     } else {
-        format!("C:\\Users\\{}\\AppData\\.minecraft", username)
+        format!("C:\\Users\\{}\\AppData\\Roaming\\.minecraft", username)
     }
 }
 
