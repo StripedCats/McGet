@@ -95,7 +95,7 @@ impl CliApp {
                 return Ok(());
             }
 
-            cfg.mc.mods.push(ModpackMod::new(first.id));
+            cfg.mc.mods.push(ModpackMod::with_id(first.id));
             cfg.store();
 
             println!("Found & added to modpack:");
@@ -130,14 +130,23 @@ impl CliApp {
         let packs = get_config_location().join("modpacks").join(&pack.mc.name);
         std::fs::create_dir(packs.to_str().unwrap()).unwrap_or_default();
 
+        let urls = pack.mc.mods.iter().filter(
+            |v| v.url.is_some()
+        ).collect::<Vec<&ModpackMod>>();
+
         println!("Resolving dependencies...");
-        let deps = resolve_dependencies(&cf, pack.mc.mods.iter().map(
-            |v| v.id
+        let deps = resolve_dependencies(&cf, pack.mc.mods.iter().filter(
+            |v| v.id.is_some()
+        ).map(
+            |v| v.id.unwrap()
         ).collect(), version.clone(), packs.to_str().unwrap().to_string()).await;
 
         println!("Downloading mods...");
         for target in deps {
             downloader.add_target(target);
+        }
+        for target in urls {
+            downloader.add_target(DownloadTarget{id: None, url: Some(target.url.as_ref().unwrap().clone()), dest: packs.to_str().unwrap().to_string()});
         }
 
         downloader.download(&cf, version).await;

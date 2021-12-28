@@ -99,7 +99,8 @@ pub async fn resolve_dependencies(cf: &CurseForge, of: Vec<usize>,
 
         let mut lock = dependency_map.lock().await;
         if !(*lock).contains(&modid) {
-            targets.push(DownloadTarget{id: modid, dest: path.clone()});
+            targets.push(DownloadTarget{id: Some(modid), dest: path.clone(),
+                                        url: None});
             (*lock).insert(modid);
 
             println!(">> Resolved dependency {}", modid);

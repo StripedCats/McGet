@@ -21,9 +21,11 @@ use {
 
 type ArcResult<T> = Result<T, Box<dyn std::error::Error + Send>>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DownloadTarget {
-    pub id: usize,
+    pub id: Option<usize>,
+    pub url: Option<String>,
+
     pub dest: String,
 }
 
@@ -41,7 +43,7 @@ impl MassDownloader {
     }
 
     pub fn add_file(&mut self, id: usize, dest: String) {
-        self.files.push(DownloadTarget{id, dest});
+        self.files.push(DownloadTarget{id: Some(id), dest, url: None});
     }
 
     pub fn add_target(&mut self, target: DownloadTarget) {
@@ -51,22 +53,37 @@ impl MassDownloader {
     async fn download_process(client: Client<HttpsConnector<HttpConnector>>,
                               file: &mut DownloadTarget, cf: CurseForge,
                               version: GameVersion) -> ArcResult<(usize, String)> {
-        let mf = match cf.files(file.id, version).await {
-            Ok(r) => r,
-            Err(_) => { return Ok((0, file.id.to_string())); }
-        };
+        let mut url: String;
+        let filename: String;
 
-        let latest = mf.latest();
-        if latest.is_err() {
-            return Ok((0, file.id.to_string()));
+        if file.url.is_none() {
+            let mf = match cf.files(file.id.unwrap(), version).await {
+                Ok(r) => r,
+                Err(_) => { return Ok((0, file.id.unwrap().to_string())); }
+            };
+    
+            let latest = mf.latest();
+            if latest.is_err() {
+                return Ok((0, file.id.unwrap().to_string()));
+            }
+    
+            url = latest.unwrap().download_url.clone();
+            filename = latest.as_ref().unwrap().filename.clone();
+        } else {
+            url = file.url.as_ref().unwrap().clone();
+            let fm = file.url.as_ref().unwrap();
+            let mut fm = &fm[fm.rfind('/').unwrap()+1..];
+
+            if let Some(pos) = fm.rfind('?') {
+                fm = &fm[..pos];
+            }
+
+            filename = fm.to_string();
         }
-
-        let mut url = latest.unwrap().download_url.clone();
+        
         let dst_path = Path::new(&file.dest);
+        file.dest = dst_path.join(&filename).to_str().unwrap().to_string();
 
-        file.dest = dst_path.join(&latest.unwrap().filename).to_str().unwrap().to_string();
-
-        drop(mf);
         let response;
 
         loop {
@@ -122,7 +139,7 @@ impl MassDownloader {
                     },
 
                     Err(_) => {
-                        tx.send((0usize, file.id.to_string())).await.unwrap_or_default();
+                        tx.send((0usize, file.id.unwrap_or(0).to_string())).await.unwrap_or_default();
                     }
                 }
             });
