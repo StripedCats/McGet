@@ -109,17 +109,21 @@ impl GameVersion {
 impl ModFile {
     pub fn has_version(&self, ver: &str) -> bool {
         let lower = ver.to_lowercase();
-        self.versions.iter().any(move |v| v.to_lowercase() == lower)
+        let had = self.versions.iter().any(move |v| v.to_lowercase() == lower);
+        had
+    }
+
+    pub fn is_modloader(s: &str) -> bool {
+        s == "Forge" || s == "Fabric" || s == "LiteLoader"
     }
 
     pub fn has_mod_loader(&self, loader: &str) -> bool {
         let lower = loader.to_lowercase();
-        if self.versions.len() == 1 {
+        if self.versions.is_empty() {
             return true;
-        } else if self.versions.is_empty() {
-            return false;
         }
+        let first = self.versions.first().unwrap();
 
-        self.versions.first().unwrap().to_lowercase() == lower
+        !Self::is_modloader(first) || first.to_lowercase() == lower
     }
 }

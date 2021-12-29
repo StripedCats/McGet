@@ -61,7 +61,7 @@ impl MassDownloader {
                 Ok(r) => r,
                 Err(_) => { return Ok((0, file.id.unwrap().to_string())); }
             };
-    
+
             let latest = mf.latest();
             if latest.is_err() {
                 return Ok((0, file.id.unwrap().to_string()));
