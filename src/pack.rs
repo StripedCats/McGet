@@ -6,6 +6,7 @@ use {
     serde::{Deserialize, Serialize},
     crate::config::*,
     colored::*,
+    chrono::{DateTime, Utc},
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -20,7 +21,7 @@ pub struct CurseForgeSource {
     pub id: i64,
 
     #[serde(rename = "PublishDate")]
-    pub date: i32,
+    pub date: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,6 +47,30 @@ pub struct LocalModPack {
 }
 
 impl LocalModPack {
+    #[inline]
+    pub fn by_id(
+        &self,
+        id: i64,
+    ) -> Option<&LocalMod> {
+        self.mods.iter()
+                 .find(move |m| match m {
+                     LocalMod::CurseForge(source) => source.id == id,
+                     _ => false,
+                 })
+    }
+
+    #[inline]
+    pub fn by_id_mut(
+        &mut self,
+        id: i64
+    ) -> Option<&mut LocalMod> {
+        self.mods.iter_mut()
+                 .find(move |m| match m {
+                     LocalMod::CurseForge(source) => source.id == id,
+                     _ => false,
+                 })
+    }
+
     pub fn new(
         name: String,
         version: String,

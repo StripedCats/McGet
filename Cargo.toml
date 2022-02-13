@@ -9,9 +9,13 @@ edition = "2021"
 whoami = "1.2.1"
 clap = "3.0.14"
 
+curseforge = { path = "curseforge" }
+downloader = { path = "downloader" }
 
 serde = { version = "1.0.136", features = ["derive"] }
 serde_yaml = "0.8.23"
 
 colored = "2.0.0"
 symlink = "0.1.0"
+chrono = { version = "0.4.19", features = ["serde"] }
+tokio = { version = "1.16.1", features = ["full"] }
