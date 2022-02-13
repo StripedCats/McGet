@@ -6,6 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.15.0", features = ["full"] }
+whoami = "1.2.1"
+clap = "3.0.14"
 
-cli = { path = "cli" }
+
+serde = { version = "1.0.136", features = ["derive"] }
+serde_yaml = "0.8.23"
+
+colored = "2.0.0"
+symlink = "0.1.0"
