@@ -10,6 +10,7 @@ pub struct ModEntry {
     pub summary: String,
 
     #[serde(rename = "modLoaders")]
+    #[serde(default)]
     pub mod_loaders: Vec<String>,
 }
 
@@ -37,9 +38,18 @@ pub fn is_mod_loader(loader: &str) -> bool {
 
 impl ModFile {
     pub fn has_loader(&self, loader: &str) -> bool {
-        self.versions.iter()
-                     .filter(|v| is_mod_loader(&v))
-                     .any(|v| v == loader)
+        let mut mod_loader_found = false;
+        for version in self.versions.iter() {
+            if is_mod_loader(version) {
+                mod_loader_found = true;
+
+                if loader == version {
+                    return true;
+                }
+            }
+        }
+
+        !mod_loader_found
     }
 
     pub fn has_version(&self, version: &str) -> bool {

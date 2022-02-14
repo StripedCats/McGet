@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 whoami = "1.2.1"
-clap = "3.0.14"
+clap = { version = "3.0.14", features = ["derive"] }
 
 curseforge = { path = "curseforge" }
 downloader = { path = "downloader" }
