@@ -70,7 +70,7 @@ impl Config {
 
 #[inline]
 pub fn panic_log_above() -> ! {
-    panic!("See message above");
+    std::process::exit(1);
 }
 
 fn default_minecraft_path() -> String {

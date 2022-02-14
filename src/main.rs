@@ -1,7 +1,9 @@
 use {
     crate::{
         config::*,
-        pack::*,
+        
+        local_pack::*,
+
         fmt::*,
     },
 
@@ -77,7 +79,7 @@ enum Commands {
         /// Case insensitive mod loader (e.g. forge, fabric, liteloader)
         #[clap(short, long)]
         #[clap(alias = "mod-loader")]
-        loader: String,
+        loader: Option<String>,
     },
 
     /// Switch to modpack (make symbolic link to Minecraft mods)
@@ -116,9 +118,80 @@ async fn main() {
                 loader,
                 !direct_order
             ).await;
-            for result in results {
-                println!("{}", format_mod(&result));
+            for result in results.iter() {
+                println!("{}", format_mod(result));
             }
+
+            if add_n != &0 || add_all != &false {
+                if to.is_none() {
+                    println!("{}: --to keyword is required to add mods", "Failed".red());
+                    return;
+                }
+
+                let take_n;
+                if add_n != &0 {
+                    take_n = *add_n;
+                } else {
+                    take_n = u64::MAX;
+                }
+
+                let dest = to_yaml_ext(to.as_ref().unwrap());
+                let mut pack = LocalModPack::load_file(&dest);
+
+                for (mut index, mut result) in results.iter().enumerate() {
+                    if index as u64 >= take_n {
+                        break;
+                    } else if !direct_order {
+                        index = results.len() - index - 1;
+                        result = &results[index];
+                    }
+
+                    if pack.by_id(result.id).is_some() {
+                        println!("{} is already in modpack, skipping...", result.name.red());
+                        continue;
+                    }
+
+                    pack.mods.push(
+                        LocalMod::CurseForge(CurseForgeSource{
+                            id: result.id,
+                            date: None,
+                            filename: None,
+                        })
+                    );
+
+                    println!("{} added {} to {}", "Successfully".green(), result.name.green(), dest);
+                }
+
+                if take_n == u64::MAX {
+                    println!("{} added {} mods to {}", "Successfully".green(), results.len(), dest);
+                }
+
+                pack.store_to_file(&dest);
+            }
+        },
+
+        Commands::Create{
+            name,
+            version,
+            loader
+        } => {
+            let n_loader: String;
+            if let Some(l) = loader.as_ref() {
+                n_loader = l.clone();
+            } else {
+                n_loader = "Forge".to_owned();
+            }
+
+            let dest = to_yaml_ext(name);
+            let loader = n_loader;
+            let pack = LocalModPack::new(
+                name.clone(),
+                version.clone(),
+                loader
+            );
+
+            pack.store_to_file(&dest);
+            println!("Stored to {}", dest.green());
         },
 
         x => {
@@ -127,6 +200,6 @@ async fn main() {
     }
 }
 
-mod config;
-mod pack;
 mod fmt;
+mod config;
+mod local_pack;

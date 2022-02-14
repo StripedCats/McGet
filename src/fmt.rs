@@ -1,8 +1,20 @@
 use {
     curseforge::models::*,
     
+    std::path::Path,
     colored::*,
 };
+
+#[inline]
+pub fn to_yaml_ext(src: &str) -> String {
+    let ext = Path::new(src).extension();
+
+    if ext.is_none() {
+        format!("{}.yaml", src)
+    } else {
+        src.to_owned()
+    }
+}
 
 #[inline]
 pub fn format_mod(

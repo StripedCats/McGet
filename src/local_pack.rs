@@ -7,6 +7,8 @@ use {
     crate::config::*,
     colored::*,
     chrono::{DateTime, Utc},
+
+    std::path::PathBuf,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -21,7 +23,10 @@ pub struct CurseForgeSource {
     pub id: i64,
 
     #[serde(rename = "PublishDate")]
-    pub date: DateTime<Utc>,
+    pub date: Option<DateTime<Utc>>,
+
+    #[serde(rename = "FileName")]
+    pub filename: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -85,10 +90,20 @@ impl LocalModPack {
         }
     }
 
-    pub fn load(
+    #[inline]
+    pub fn load_from_database(
         name: &str
     ) -> Self {
-        let path = get_config_location().join("database").join(format!("{}.yaml", name));
+        let buf = get_config_location().join("database").join(format!("{}.yaml", name));
+        Self::load_file(
+            buf.to_str().unwrap()
+        )
+    }
+
+    pub fn load_file(
+        name: &str
+    ) -> Self {
+        let path = PathBuf::from(name);
         let text = match std::fs::read_to_string(path) {
             Ok(t) => t,
             Err(e) => {
@@ -106,9 +121,18 @@ impl LocalModPack {
         }
     }
 
-    pub fn store(&self) {
+    #[inline]
+    pub fn store_to_database(&self) {
+        self.store_to_file(
+            get_config_location().join("database")
+                                      .join(format!("{}.yaml", self.name))
+                                      .to_str()
+                                      .unwrap()
+        );
+    }
+
+    pub fn store_to_file(&self, path: &str) {
         let text = serde_yaml::to_string(self).unwrap();
-        let path = get_config_location().join("database").join(format!("{}.yaml", self.name));
 
         if let Err(e) = std::fs::write(path, text) {
             eprintln!("{} to write local modpack information: {}", "Failed".red(), e);
