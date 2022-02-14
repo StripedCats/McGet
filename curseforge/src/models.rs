@@ -12,6 +12,9 @@ pub struct ModEntry {
     #[serde(rename = "modLoaders")]
     #[serde(default)]
     pub mod_loaders: Vec<String>,
+
+    #[serde(rename = "websiteUrl")]
+    pub curseforge_url: String,
 }
 
 #[derive(Debug, Deserialize)]

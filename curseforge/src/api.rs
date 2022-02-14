@@ -9,8 +9,8 @@ use {
 pub async fn get_files(
     id: i64,
     
-    version: Option<&str>,
-    loader: Option<&str>,
+    version: &Option<String>,
+    loader: &Option<String>,
 ) -> Vec<ModFile> {
     let client = reqwest::Client::new();
     let files = client.get(&format!("https://addons-ecs.forgesvc.net/api/v2/addon/{}/files", id))
@@ -22,8 +22,8 @@ pub async fn get_files(
                       .expect("Failed to parse files json");
 
     files.into_iter()
-         .filter(move |file| loader.is_none() || file.has_loader(loader.unwrap()))
-         .filter(move |file| version.is_none() || file.has_version(version.unwrap()))
+         .filter(move |file| loader.is_none() || file.has_loader(loader.as_ref().unwrap()))
+         .filter(move |file| version.is_none() || file.has_version(version.as_ref().unwrap()))
          .collect()
 }
 
@@ -31,8 +31,9 @@ pub async fn get_files(
 pub async fn search_mod(
     name: &str,
 
-    version: Option<&str>,
-    loader: Option<&String>
+    version: &Option<String>,
+    loader: &Option<String>,
+    reverse: bool
 ) -> Vec<ModEntry> {
     let mut query = {
         let mut vec = SmallVec::<[(&str, &str); 4]>::new();
@@ -46,7 +47,7 @@ pub async fn search_mod(
     };
 
     if version.is_some() {
-        query.push(("gameVersion", version.unwrap()));
+        query.push(("gameVersion", version.as_ref().unwrap()));
     }
 
     let client = reqwest::Client::new();
@@ -59,7 +60,12 @@ pub async fn search_mod(
                      .await
                      .expect("Failed to parse Mod JSON");
 
-    mods.into_iter()
-        .filter(move |entry| loader.is_none() || entry.mod_loaders.contains(loader.unwrap()))
-        .collect()
+    let iter = mods.into_iter()
+                   .filter(move |entry| loader.is_none() || entry.mod_loaders.contains(loader.as_ref().unwrap()));
+    
+    if reverse {
+        iter.rev().collect()
+    } else {
+        iter.collect()
+    }
 }

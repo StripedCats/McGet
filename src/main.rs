@@ -2,9 +2,11 @@ use {
     crate::{
         config::*,
         pack::*,
+        fmt::*,
     },
 
     clap::*,
+    colored::*,
     curseforge::prelude::*,
 };
 
@@ -96,8 +98,35 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    println!("{:?}", cli);
+    match &cli.command {
+        Commands::Search{
+            query,
+            direct_order,
+            loader,
+            version,
+            add_n,
+            add_all,
+            to
+        } => {
+            println!("Querying mod {}...", query.green());
+
+            let results = search_mod(
+                query,
+                version,
+                loader,
+                !direct_order
+            ).await;
+            for result in results {
+                println!("{}", format_mod(&result));
+            }
+        },
+
+        x => {
+            eprintln!("[FIXME] Unmatched {:?}", x);
+        }
+    }
 }
 
 mod config;
 mod pack;
+mod fmt;
