@@ -121,7 +121,6 @@ pub async fn spawn_resolvers(
 
     for (index, id) in ids.iter().cloned().enumerate() {
         if index >= workers_number {
-            println!("Joining");
             join_all(&mut workers).await;
             workers.clear();
         }

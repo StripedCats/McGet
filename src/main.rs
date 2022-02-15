@@ -159,7 +159,7 @@ async fn main() {
                         LocalMod::CurseForge(CurseForgeSource{
                             id: result.id,
                             date: None,
-                            filename: None,
+                            filename: Some(result.name.clone()),
                         })
                     );
 
