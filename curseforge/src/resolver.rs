@@ -12,6 +12,7 @@ use {
 
     std::{
         sync::Arc,
+        path::Path,
     },
 
     rustc_hash::FxHashMap,
@@ -47,7 +48,7 @@ pub async fn resolve_dependencies(
     ).await;
 
     if files.is_empty() {
-        println!("{} to resolve dependency of Mod#{}", "[Error]".red(), id);
+        println!("{} Failed to resolve dependency of Mod#{}", "[Error  ]".red(), id);
         return;
     } else if id != dep_of {
         println!(
@@ -69,7 +70,11 @@ pub async fn resolve_dependencies(
         let dep = lock.get_mut(&id).unwrap();
 
         dep.url = latest.download_url;
-        dep.name = latest.name.clone();
+        dep.name = Path::new(&dep.url).file_name()
+                                      .unwrap()
+                                      .to_str()
+                                      .unwrap()
+                                      .to_owned();
     }
 
     for dependency in latest.dependencies

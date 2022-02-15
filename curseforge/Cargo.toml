@@ -14,8 +14,6 @@ chrono = { version = "0.4.19", features = ["serde"] }
 tokio = { version = "1.16.1", features = ["full"] }
 
 smallvec = "1.8.0"
-
-lockfree = "0.5.1"
 async-recursion = "1.0.0"
 
 colored = "2.0.0"

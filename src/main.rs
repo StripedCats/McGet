@@ -9,6 +9,7 @@ use {
 
     clap::*,
     colored::*,
+    downloader::prelude::*,
     curseforge::prelude::*,
 };
 
@@ -182,6 +183,7 @@ async fn main() {
             let file = to_yaml_ext(pack);
             let pack = LocalModPack::load_file(&file);
             
+            println!("Resolving dependencies of {}'s mods...", pack.name.blue());
             let deps = spawn_resolvers(
                 pack.mods.iter()
                     .filter(|mod_| mod_.is_curseforge())
@@ -193,8 +195,28 @@ async fn main() {
                 Some(pack.loader),
                 *timeout
             ).await;
+            println!("{} {} dependencies, launching downloader...", "Resolved".bright_green(), deps.len());
 
-            println!("{:#?}", deps);
+            let mut downloader = Downloader::new(
+                "test".into()
+            );
+
+            // TODO: optimize this
+            // TODO: fix empty urls in not resolved dependencies
+            downloader.extend(deps.iter().filter(|(_, v)| !v.url.is_empty()).map(
+                |(_, dep)| (dep.url.clone(), dep.name.clone())
+            ).collect());
+            downloader.extend(
+                pack.mods.iter()
+                    .filter(|v| !v.is_curseforge())
+                    .map(|v| v.to_url_source())
+                    .map(|v| (v.url.clone(), v.basename()))
+                    .collect()
+            );
+
+            downloader.download_all(*workers as usize).await;
+
+            println!("{} downloaded modpack", "Successfully".green())
         },
 
         Commands::Create{

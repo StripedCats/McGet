@@ -3,6 +3,8 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug)]
 pub struct LocalDependency {
     pub id: i64,
+
+    pub name: String,
     pub url: String,
 }
 

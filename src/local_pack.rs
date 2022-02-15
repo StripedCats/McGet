@@ -8,10 +8,10 @@ use {
     colored::*,
     chrono::{DateTime, Utc},
 
-    std::path::PathBuf,
+    std::path::{PathBuf, Path},
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UrlSource {
     #[serde(rename = "Url")]
     pub url: String,
@@ -51,6 +51,16 @@ pub struct LocalModPack {
     pub loader: String,
 }
 
+impl UrlSource {
+    pub fn basename(&self) -> String {
+        Path::new(&self.url).file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .to_owned()
+    }
+}
+
 impl LocalMod {
     pub fn is_curseforge(&self) -> bool {
         match self {
@@ -64,6 +74,15 @@ impl LocalMod {
             Self::CurseForge(source) => source.clone(),
             _ => {
                 panic!("Not a curseforge source ({:?})", self);
+            }
+        }
+    }
+
+    pub fn to_url_source(&self) -> UrlSource {
+        match self {
+            Self::Url(source) => source.clone(),
+            _ => {
+                panic!("Not an URL source ({:?})", self);
             }
         }
     }

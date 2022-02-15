@@ -27,3 +27,4 @@ chrono = { version = "0.4.19", features = ["serde"] }
 tokio = { version = "1.16.1", features = ["full"] }
 
 termsize = "0.1.6"
+asking = "0.0.2"
