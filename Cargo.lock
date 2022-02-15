@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "async-recursion"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cda8f4bcc10624c4e85bc66b3f452cca98cfa5ca002dc83a16aad2367641bea"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -130,17 +141,24 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 name = "curseforge"
 version = "0.1.0"
 dependencies = [
+ "async-recursion",
  "chrono",
+ "colored",
  "lockfree",
  "reqwest",
+ "rustc-hash",
  "serde",
  "serde_json",
  "smallvec",
+ "tokio",
 ]
 
 [[package]]
 name = "downloader"
 version = "0.1.0"
+dependencies = [
+ "reqwest",
+]
 
 [[package]]
 name = "encoding_rs"
@@ -773,6 +791,12 @@ dependencies = [
  "web-sys",
  "winreg",
 ]
+
+[[package]]
+name = "rustc-hash"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "ryu"

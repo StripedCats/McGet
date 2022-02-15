@@ -3,7 +3,13 @@ use {
         models::*,
     },
 
+    tokio::{
+        time::timeout,
+    },
+
+    std::time::Duration,
     smallvec::SmallVec,
+    colored::*,
 };
 
 pub async fn get_files(
@@ -11,15 +17,49 @@ pub async fn get_files(
     
     version: &Option<String>,
     loader: &Option<String>,
+
+    timeout_secs: u64,
 ) -> Vec<ModFile> {
     let client = reqwest::Client::new();
-    let files = client.get(&format!("https://addons-ecs.forgesvc.net/api/v2/addon/{}/files", id))
-                      .send()
-                      .await
-                      .expect("Failed to request files")
-                      .json::<Vec<ModFile>>()
-                      .await
-                      .expect("Failed to parse files json");
+
+    let mut retries = 0;
+    let mut files = vec![];
+
+    let req_timeout = Duration::from_secs(timeout_secs);
+
+    while retries < 10 {
+        retries += 1;
+        let future_result = timeout(
+            req_timeout,
+            client.get(&format!("https://addons-ecs.forgesvc.net/api/v2/addon/{}/files", id)).send()
+        ).await;
+        let response = match future_result {
+            Ok(Ok(r)) => r,
+            Ok(Err(e)) => {
+                println!("Request error: {}, retrying... (retry no#{})", e, retries);
+                continue;
+            },
+
+            Err(_) => {
+                println!("{} {} ({} seconds)", "[Error  ]".red(), "Timed out".red(), timeout_secs);
+                continue;
+            },
+        };
+
+        let ac_files =  response.json::<Vec<ModFile>>().await;
+        if ac_files.is_err() {
+            println!("Request error: {}, retrying... (retry no#{})", "Failed to parse files JSON".red(), retries);
+            continue;
+        }
+
+        files = ac_files.unwrap();
+        break;
+    }
+
+    if retries > 9 {
+        println!("Failed to retrieve Mod#{} files ({} retries passed)", id, retries);
+        std::process::exit(1);
+    }
 
     files.into_iter()
          .filter(move |file| loader.is_none() || file.has_loader(loader.as_ref().unwrap()))

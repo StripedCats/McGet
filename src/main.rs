@@ -64,6 +64,10 @@ enum Commands {
         /// Download workers
         #[clap(short, long, default_value_t = 4)]
         workers: u8,
+
+        /// Dependency resolver timeout
+        #[clap(short, long, default_value_t = 5)]
+        timeout: u64,
     },
 
     /// Create YAML modpack file
@@ -168,6 +172,29 @@ async fn main() {
 
                 pack.store_to_file(&dest);
             }
+        },
+
+        Commands::Download{
+            pack,
+            workers,
+            timeout,
+        } => {
+            let file = to_yaml_ext(pack);
+            let pack = LocalModPack::load_file(&file);
+            
+            let deps = spawn_resolvers(
+                pack.mods.iter()
+                    .filter(|mod_| mod_.is_curseforge())
+                    .map(|v| v.to_curseforge_source())
+                    .map(|v| v.id)
+                    .collect(),
+                *workers as usize,
+                Some(pack.version),
+                Some(pack.loader),
+                *timeout
+            ).await;
+
+            println!("{:#?}", deps);
         },
 
         Commands::Create{

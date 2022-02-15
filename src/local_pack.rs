@@ -17,7 +17,7 @@ pub struct UrlSource {
     pub url: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CurseForgeSource {
     #[serde(rename = "Id")]
     pub id: i64,
@@ -49,6 +49,24 @@ pub struct LocalModPack {
 
     #[serde(rename = "ModLoader")]
     pub loader: String,
+}
+
+impl LocalMod {
+    pub fn is_curseforge(&self) -> bool {
+        match self {
+            Self::CurseForge(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn to_curseforge_source(&self) -> CurseForgeSource {
+        match self {
+            Self::CurseForge(source) => source.clone(),
+            _ => {
+                panic!("Not a curseforge source ({:?})", self);
+            }
+        }
+    }
 }
 
 impl LocalModPack {

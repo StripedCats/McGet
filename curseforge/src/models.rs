@@ -4,6 +4,15 @@ use {
 };
 
 #[derive(Debug, Deserialize)]
+pub struct ModDependency {
+    #[serde(rename = "addonId")]
+    pub id: i64,
+
+    #[serde(rename = "type")]
+    pub dep_type: i8,  // 3 - required
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ModEntry {
     pub id: i64,
     pub name: String,
@@ -21,6 +30,9 @@ pub struct ModEntry {
 pub struct ModFile {
     pub id: i64,
 
+    #[serde(rename = "displayName")]
+    pub name: String,
+
     #[serde(rename = "downloadUrl")]
     pub download_url: String,
 
@@ -29,6 +41,8 @@ pub struct ModFile {
 
     #[serde(rename = "gameVersion")]
     pub versions: Vec<String>,
+
+    pub dependencies: Vec<ModDependency>,
 }
 
 #[inline]
