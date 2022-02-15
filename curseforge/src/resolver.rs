@@ -34,7 +34,7 @@ pub async fn resolve_dependencies(
 ) {
     {
         let mut lock = dep_db.lock().await;
-        if lock.insert(id, LocalDependency{ id, url: "".to_owned() }).is_some() {
+        if lock.insert(id, LocalDependency{ id, url: "".to_owned(), name: "".to_owned() }).is_some() {
             return;
         }
     }
@@ -67,7 +67,9 @@ pub async fn resolve_dependencies(
     {
         let mut lock = dep_db.lock().await;
         let dep = lock.get_mut(&id).unwrap();
+
         dep.url = latest.download_url;
+        dep.name = latest.name.clone();
     }
 
     for dependency in latest.dependencies
@@ -119,8 +121,8 @@ pub async fn spawn_resolvers(
         )
     );
 
-    for (index, id) in ids.iter().cloned().enumerate() {
-        if index >= workers_number {
+    for id in ids.iter().cloned() {
+        if workers.len() >= workers_number {
             join_all(&mut workers).await;
             workers.clear();
         }
