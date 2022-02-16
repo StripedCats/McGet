@@ -24,7 +24,6 @@ serde_yaml = "0.8.23"
 colored = "2.0.0"
 symlink = "0.1.0"
 chrono = { version = "0.4.19", features = ["serde"] }
-tokio = { version = "1.16.1", features = ["full"] }
+tokio = { version = "1.16.1", features = ["rt-multi-thread", "rt", "macros"] }
 
 termsize = "0.1.6"
-asking = "0.0.2"

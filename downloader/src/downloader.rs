@@ -44,7 +44,7 @@ impl Downloader {
             println!("{} to download file {}", "Failed".red(), url);
             return;
         }
-        let mut request = request.unwrap();
+        let request = request.unwrap();
         let content_length = request.content_length().unwrap_or(209715200);
         bar.inc_length(content_length);
 

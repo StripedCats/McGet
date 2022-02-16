@@ -4,11 +4,15 @@
 
 use {
     serde::{Deserialize, Serialize},
-    crate::config::*,
+    crate::{
+        config::*,
+        fmt::*,
+    },
     colored::*,
     chrono::{DateTime, Utc},
 
     std::path::{PathBuf, Path},
+    symlink::*,
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -127,7 +131,6 @@ impl LocalModPack {
         }
     }
 
-    #[inline]
     pub fn load_from_database(
         name: &str
     ) -> Self {
@@ -135,6 +138,83 @@ impl LocalModPack {
         Self::load_file(
             buf.to_str().unwrap()
         )
+    }
+
+    #[inline]
+    pub fn get_modpack_path(name: &str, create: &mut bool) -> PathBuf {
+        let path = get_config_location().join("mods").join(name);
+        if !path.exists() {
+            if *create {
+                if let Err(e) = std::fs::create_dir(&path) {
+                    eprintln!("Can't make directory {:?}: {}", path, e);
+                    panic_log_above();
+                }
+
+                *create = false;
+
+                return path;
+            }
+            eprintln!("{}: modpack {} does not exists", "ERROR".red(), name.red());
+            panic_log_above();
+        }
+
+        path
+    }
+
+    #[inline]
+    pub fn switch_to_modpack(name: &str) {
+        let path = Self::get_modpack_path(name, &mut false);
+        let mods = Config::load().minecraft_path.join("mods");
+
+        if mods.exists() && !mods.is_symlink() {
+            println!("Can't switch modpack because mods is a non-symbolic link. Select an option");
+            let result = ask_for(&[
+                "Move mods directory to mods.mcget_backup",
+                "Remove mods directory",
+                "Exit"
+            ]);
+
+            match result {
+                0 => {
+                    if let Err(e) = std::fs::rename(&mods, mods.parent().unwrap().join("mods.mcget_backup")) {
+                        eprintln!("{} to move directory {:?}: {}", "Failed".red(), mods, e);
+                        panic_log_above();
+                    }
+                },
+
+                1 => {
+                    if let Err(e) = std::fs::remove_dir_all(&mods) {
+                        eprintln!("{} to remove directory {:?}: {}", "Failed".red(), mods, e);
+                        panic_log_above();
+                    }
+                },
+
+                2 => panic_log_above(),
+
+                _ => { unreachable!(); }
+            }
+        }
+
+        remove_symlink_dir(&mods).unwrap_or_default();
+        if let Err(e) = symlink_dir(&path, &mods) {
+            eprintln!("{}: Can't make symbolic link {:?} => {:?} ({})", "ERROR".red(), &path, &mods, e);
+            panic_log_above();
+        }
+
+        println!("{} made symbolic link {:?} => {:?}", "Successfully".bright_green(), path, mods);
+    }
+
+    pub fn remove_modpack(name: &str) {
+        let mods = Config::load().minecraft_path.join("mods");
+        let path = Self::get_modpack_path(name, &mut false);
+        
+        if let Err(e) = std::fs::remove_dir_all(&path) {
+            eprintln!("{}: Can't remove directory {:?} ({})", "ERROR".red(), &path, e);
+            panic_log_above();
+        }
+
+        remove_symlink_dir(mods).unwrap_or_default();
+        println!("{} modpack {}", "Removed".red(), name.bright_red());
     }
 
     pub fn load_file(

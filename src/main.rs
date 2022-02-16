@@ -1,7 +1,5 @@
 use {
     crate::{
-        config::*,
-        
         local_pack::*,
 
         fmt::*,
@@ -106,6 +104,18 @@ enum Commands {
 async fn main() {
     let cli = Cli::parse();
     match &cli.command {
+        Commands::Switch{
+            name
+        } => {
+            LocalModPack::switch_to_modpack(&name);
+        },
+
+        Commands::Remove{
+            name
+        } => {
+            LocalModPack::remove_modpack(&name);
+        },
+
         Commands::Search{
             query,
             direct_order,
@@ -180,8 +190,16 @@ async fn main() {
             workers,
             timeout,
         } => {
+            let mut created = true;
+
             let file = to_yaml_ext(pack);
             let pack = LocalModPack::load_file(&file);
+            let pack_path = LocalModPack::get_modpack_path(&pack.name, &mut created);
+
+            if created {
+                std::fs::remove_dir_all(&pack_path).unwrap();
+                std::fs::create_dir(&pack_path).unwrap();
+            }
             
             println!("Resolving dependencies of {}'s mods...", pack.name.blue());
             let deps = spawn_resolvers(
@@ -198,12 +216,11 @@ async fn main() {
             println!("{} {} dependencies, launching downloader...", "Resolved".bright_green(), deps.len());
 
             let mut downloader = Downloader::new(
-                "test".into()
+                pack_path.clone()
             );
 
             // TODO: optimize this
-            // TODO: fix empty urls in not resolved dependencies
-            downloader.extend(deps.iter().filter(|(_, v)| !v.url.is_empty()).map(
+            downloader.extend(deps.iter().map(
                 |(_, dep)| (dep.url.clone(), dep.name.clone())
             ).collect());
             downloader.extend(
@@ -215,6 +232,7 @@ async fn main() {
             );
 
             downloader.download_all(*workers as usize).await;
+            LocalModPack::switch_to_modpack(&pack.name);
 
             println!("{} downloaded modpack", "Successfully".green())
         },
@@ -242,10 +260,6 @@ async fn main() {
             pack.store_to_file(&dest);
             println!("Stored to {}", dest.green());
         },
-
-        x => {
-            eprintln!("[FIXME] Unmatched {:?}", x);
-        }
     }
 }
 

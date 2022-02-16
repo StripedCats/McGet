@@ -1,9 +1,43 @@
 use {
     curseforge::models::*,
     
-    std::path::Path,
+    std::{
+        path::Path,
+        io::{self, BufRead}
+    },
     colored::*,
 };
+
+#[inline]
+pub fn ask_for(choices: &[&'static str]) -> usize {
+    for (index, choice) in choices.iter().enumerate() {
+        println!("{}) {}", index+1, choice.green());
+    }
+
+    let selected;
+    loop {
+        let stdin = io::stdin();
+        let line = stdin.lock()
+                        .lines()
+                        .next()
+                        .unwrap()
+                        .unwrap();
+        let opt = match line.parse::<i32>() {
+            Ok(r) => r,
+            Err(_) => { continue; }
+        } - 1;
+
+        if (opt < 0) || (opt >= choices.len() as i32) {
+            println!("Try again");
+            continue;
+        }
+
+        selected = opt as usize;
+        break;
+    }
+
+    selected
+}
 
 #[inline]
 pub fn to_yaml_ext(src: &str) -> String {

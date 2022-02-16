@@ -1,7 +1,7 @@
 use {
     whoami::username,
     std::{
-        path::{PathBuf, Path},
+        path::{PathBuf}, // , Path},
     },
 
     serde::{
@@ -14,7 +14,7 @@ use {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     #[serde(rename = "MinecraftPath")]
-    pub minecraft_path: String,
+    pub minecraft_path: PathBuf,
 }
 
 impl Config {
@@ -22,7 +22,7 @@ impl Config {
         minecraft_path: String,
     ) -> Self {
         Self{
-            minecraft_path
+            minecraft_path: minecraft_path.into()
         }
     }
 
@@ -106,7 +106,7 @@ pub fn get_config_location() -> PathBuf {
     path.push("mcget");
     
     std::fs::create_dir(&path).unwrap_or_default();
-    std::fs::create_dir(&path.join("modpacks")).unwrap_or_default();
+    std::fs::create_dir(&path.join("mods")).unwrap_or_default();
     std::fs::create_dir(&path.join("database")).unwrap_or_default();
 
     path

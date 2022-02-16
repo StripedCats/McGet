@@ -41,7 +41,7 @@ pub async fn get_files(
             },
 
             Err(_) => {
-                println!("{} {} ({} seconds)", "[Error  ]".red(), "Timed out".red(), timeout_secs);
+                // println!("{} {} ({} seconds)", "[Error  ]".red(), "Timed out".red(), timeout_secs);
                 continue;
             },
         };

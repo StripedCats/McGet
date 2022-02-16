@@ -35,7 +35,8 @@ pub async fn resolve_dependencies(
 ) {
     {
         let mut lock = dep_db.lock().await;
-        if lock.insert(id, LocalDependency{ id, url: "".to_owned(), name: "".to_owned() }).is_some() {
+        if let Some(last) = lock.insert(id, LocalDependency{ id, url: "".to_owned(), name: "".to_owned() }) {
+            lock.insert(id, last);
             return;
         }
     }
@@ -68,7 +69,6 @@ pub async fn resolve_dependencies(
     {
         let mut lock = dep_db.lock().await;
         let dep = lock.get_mut(&id).unwrap();
-
         dep.url = latest.download_url;
         dep.name = Path::new(&dep.url).file_name()
                                       .unwrap()
@@ -80,6 +80,9 @@ pub async fn resolve_dependencies(
     for dependency in latest.dependencies
                             .iter()
                             .filter(|m| m.dep_type == 3) {
+                                if id == 238222 {
+                                    println!("JEI");
+                                }
         resolve_dependencies(
             dependency.id,
             id,
