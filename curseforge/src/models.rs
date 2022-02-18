@@ -46,21 +46,23 @@ pub struct ModFile {
 }
 
 #[inline]
-pub fn is_mod_loader(loader: &str) -> bool {
-    match loader.to_lowercase().as_str() {
+pub fn is_mod_loader(loader: &str) -> (bool, String) {
+    let lcase = loader.to_lowercase();
+    (match lcase.as_str() {
         "forge" | "fabric" | "liteloader" => true,
         _ => false,
-    }
+    }, lcase)
 }
 
 impl ModFile {
     pub fn has_loader(&self, loader: &str) -> bool {
         let mut mod_loader_found = false;
+
         for version in self.versions.iter() {
-            if is_mod_loader(version) {
+            if let (true, ver) = is_mod_loader(version) {
                 mod_loader_found = true;
 
-                if loader == version {
+                if loader == ver {
                     return true;
                 }
             }

@@ -118,7 +118,7 @@ pub async fn spawn_resolvers(
     workers_number: usize,
 
     version: Option<String>,
-    loader: Option<String>,
+    mut loader: Option<String>,
 
     timeout: u64,
 ) -> FxHashMap<i64, LocalDependency> {
@@ -128,6 +128,10 @@ pub async fn spawn_resolvers(
             Default::default()
         )
     );
+
+    if let Some(unpacked) = loader {
+        loader = Some(unpacked.to_lowercase());
+    }
 
     for id in ids.iter().cloned() {
         if workers.len() >= workers_number {
