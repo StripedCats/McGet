@@ -80,9 +80,6 @@ pub async fn resolve_dependencies(
     for dependency in latest.dependencies
                             .iter()
                             .filter(|m| m.dep_type == 3) {
-                                if id == 238222 {
-                                    println!("JEI");
-                                }
         resolve_dependencies(
             dependency.id,
             id,
